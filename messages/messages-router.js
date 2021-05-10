@@ -1,26 +1,95 @@
-const express = require("express")
-const db = require("../data/config")
+const express = require("express");
+const db = require("../data/config");
 
-const router = express.Router()
+const router = express.Router();
 
-router.get("/", (req, res, next) => {
+router.get("/", async (req, res, next) => {
+  try {
+    const messages = await db.select("*").from("messages");
+    res.status(200).json(messages);
+  } catch (err) {
+    next(err);
+  }
+});
 
-})
+router.get("/:id", async (req, res, next) => {
+  try {
+    const message = await db
+      .select("*")
+      .from("messages")
+      .where("id", req.params.id);
+    res.status(200).json(message);
+  } catch (err) {
+    next(err);
+  }
+});
 
-router.get("/:id", (req, res, next) => {
+router.post("/", async (req, res, next) => {
+  try {
+    const payload = {
+      title: req.body.title,
+      contents: req.body.contents,
+    };
 
-})
+    if (!payload.title || !payload.contents) {
+      return res.status(404).json({
+        message: "Missing message title and contents",
+      });
+    }
 
-router.post("/", (req, res, next) => {
+    const [id] = await db.insert(payload).into("messages");
+    const [message] = await db.select("*").from("messages").where("id", id);
 
-})
+    res.status(201).json(message);
+  } catch (err) {
+    next(err);
+  }
+});
 
-router.put("/:id", (req, res, next) => {
+router.put("/:id", async (req, res, next) => {
+  try {
+    const payload = {
+      title: req.body.title,
+      contents: req.body.contents,
+    };
 
-})
+    if (!payload.title || !payload.contents) {
+      return res.status(404).json({
+        message: "Missing message title and contents",
+      });
+    }
 
-router.delete("/:id", (req, res, next) => {
+    await db("messages").where("id", req.params.id).update(payload);
 
-})
+    const message = await db
+      .select("*")
+      .from("messages")
+      .where("id", req.params.id);
 
-module.exports = router
+    res.json(message);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/:id", async (req, res, next) => {
+  try {
+    const payload = {
+      title: req.body.title,
+      contents: req.body.contents,
+    };
+
+    if (!payload.title || !payload.contents) {
+      return res.status(404).json({
+        message: "Missing message title and contents",
+      });
+    }
+
+    await db("messages").where("id", req.params.id).del();
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+module.exports = router;
